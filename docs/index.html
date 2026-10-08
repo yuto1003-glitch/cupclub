@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta charset="utf-8">
+<title>CupClub</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; width: 1280px; height: 720px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1b120c; color: #f2e9e0;
+  }
+  header {
+    padding: 18px 32px; display: flex; align-items: center; gap: 16px;
+    border-bottom: 1px solid #3a281c;
+  }
+  .logo { font-size: 24px; font-weight: 700; color: #e8b86d; }
+  .tag { font-size: 13px; color: #c9b8a8; }
+  .main { display: flex; gap: 20px; padding: 24px 32px; }
+  .card {
+    width: 300px; min-height: 420px; background: #2a1c13; border-radius: 14px;
+    border: 1px solid #4a3523; padding: 20px; flex-shrink: 0;
+  }
+  .card h2 { margin: 6px 0; font-size: 18px; color: #e8b86d; }
+  .avatar {
+    width: 80px; height: 80px; border-radius: 50%; background: #e8b86d;
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    margin: 0 auto 14px;
+  }
+  .stat { margin-top: 16px; font-size: 14px; color: #c9b8a8; }
+  .stat b { color: #f2e9e0; font-size: 20px; display: block; }
+  button {
+    cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px;
+    font-size: 14px; font-weight: 600; background: #e8b86d; color: #2a1c13;
+  }
+  button:disabled { background: #5a4a38; color: #998a78; cursor: default; }
+  .panels { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: #241810; border: 1px solid #4a3523; border-radius: 12px;
+    padding: 16px 20px; position: relative;
+  }
+  .panel h3 { margin: 0 0 10px; font-size: 15px; color: #e8b86d; }
+  .locked { opacity: 0.4; pointer-events: none; }
+  .lockmsg {
+    position: absolute; right: 18px; top: 16px; font-size: 12px; color: #c9b8a8;
+  }
+  .optrow { display: flex; gap: 10px; margin-bottom: 8px; }
+  .optbtn {
+    background: #3a281c; color: #f2e9e0; font-weight: 500; flex: 1;
+    text-align: left; padding: 8px 12px; border: 1px solid #4a3523;
+  }
+  .optbtn.sel { background: #e8b86d; color: #2a1c13; }
+  .result { margin-top: 8px; font-size: 13px; color: #9fd8a0; min-height: 16px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  footer {
+    position: absolute; bottom: 8px; left: 32px; font-size: 11px; color: #70594a;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">☕ CupClub</div>
+    <div class="tag">An NFT membership club that turns coffee lovers into a global community</div>
+  </header>
+  <div class="main">
+    <div class="card" data-demo="membership-card">
+      <div class="avatar">🪙</div>
+      <h2 data-demo="member-status">Not a Member</h2>
+      <div class="stat">Reputation Points<b data-demo="rep-points">0 pts</b></div>
+      <div class="stat">Tier<b data-demo="tier-label">—</b></div>
+      <div style="margin-top:24px;">
+        <button data-demo="mint-btn" onclick="mint()">Mint Membership NFT</button>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="panel locked" id="votePanel" data-demo="vote-panel">
+        <span class="lockmsg" id="voteLock">🔒 Mint to unlock</span>
+        <h3>DAO Vote: Next Featured Bean Drop</h3>
+        <div class="optrow">
+          <button class="optbtn" id="opt1" data-demo="vote-option-1" onclick="vote(1)">Ethiopia Yirgacheffe — 42 votes</button>
+          <button class="optbtn" id="opt2" data-demo="vote-option-2" onclick="vote(2)">Colombia Huila — 31 votes</button>
+        </div>
+        <div class="result" data-demo="vote-result"></div>
+      </div>
+
+      <div class="panel locked" id="redeemPanel" data-demo="redeem-panel">
+        <span class="lockmsg" id="redeemLock">🔒 Mint to unlock</span>
+        <h3>Partner Cafe Redemption</h3>
+        <div class="row">
+          <span>Scan QR at Blue Owl Coffee to redeem 50 pts for 20% off</span>
+          <button data-demo="redeem-btn" onclick="redeem()">Redeem via QR</button>
+        </div>
+        <div class="result" data-demo="redeem-result"></div>
+      </div>
+
+      <div class="panel locked" id="marketPanel" data-demo="market-panel">
+        <span class="lockmsg" id="marketLock">🔒 Mint to unlock</span>
+        <h3>Marketplace: Limited Bean Drop NFT</h3>
+        <div class="row">
+          <span>"Yirgacheffe Genesis" — 1kg physical allocation, 0.4 SOL</span>
+          <button data-demo="buy-btn" onclick="buy()">Buy Allocation</button>
+        </div>
+        <div class="result" data-demo="buy-result"></div>
+      </div>
+    </div>
+  </div>
+  <footer>Prototype — all data is simulated</footer>
+</div>
+
+<script>
+  let rep = 0;
+  let minted = false;
+
+  function mint() {
+    if (minted) return;
+    minted = true;
+    document.querySelector('[data-demo="member-status"]').textContent = "Gold Tier Member";
+    rep = 120;
+    document.querySelector('[data-demo="rep-points"]').textContent = rep + " pts";
+    document.querySelector('[data-demo="tier-label"]').textContent = "Gold";
+    document.getElementById('votePanel').classList.remove('locked');
+    document.getElementById('redeemPanel').classList.remove('locked');
+    document.getElementById('marketPanel').classList.remove('locked');
+    document.getElementById('voteLock').style.display = 'none';
+    document.getElementById('redeemLock').style.display = 'none';
+    document.getElementById('marketLock').style.display = 'none';
+    document.querySelector('[data-demo="mint-btn"]').textContent = "✓ Membership Minted";
+    document.querySelector('[data-demo="mint-btn"]').disabled = true;
+  }
+
+  function vote(n) {
+    document.getElementById('opt1').classList.remove('sel');
+    document.getElementById('opt2').classList.remove('sel');
+    if (n === 1) {
+      document.getElementById('opt1').classList.add('sel');
+      document.getElementById('opt1').textContent = "Ethiopia Yirgacheffe — 43 votes";
+      document.querySelector('[data-demo="vote-result"]').textContent = "✓ You voted for Ethiopia Yirgacheffe!";
+    } else {
+      document.getElementById('opt2').classList.add('sel');
+      document.getElementById('opt2').textContent = "Colombia Huila — 32 votes";
+      document.querySelector('[data-demo="vote-result"]').textContent = "✓ You voted for Colombia Huila!";
+    }
+  }
+
+  function redeem() {
+    if (rep < 50) {
+      document.querySelector('[data-demo="redeem-result"]').textContent = "Not enough points.";
+      return;
+    }
+    rep -= 50;
+    document.querySelector('[data-demo="rep-points"]').textContent = rep + " pts";
+    document.querySelector('[data-demo="redeem-result"]').textContent = "✓ 20% discount applied at Blue Owl Coffee!";
+  }
+
+  function buy() {
+    document.querySelector('[data-demo="buy-result"]').textContent = "✓ Allocation Reserved! Pickup at partner cafe.";
+    document.querySelector('[data-demo="buy-btn"]').disabled = true;
+  }
+</script>
+</body>
+</html>
